@@ -30,3 +30,14 @@
 *.exe
 *.out
 *.app
+my_wc
+
+# Flex/Bison Output
+location.hh
+position.hh
+stack.hh
+*.output
+*.tab.cc
+*.tab.hh
+*.yy.cc
+
