@@ -32,41 +32,79 @@ using token = Mlisp::Mlisp_Parser::token;
             yylval = lval;
 %}
 
-"(" {
-  return token::OPENPAR;
-}
+"("           {
+                  return token::OPENPAR;
+              }
 
-")" {
-  return token::CLOSEPAR;
-}
+")"           {
+                  return token::CLOSEPAR;
+              }
 
-[a-z]       {
-               return( token::LOWER );
-            }
+"+"           {
+                  return token::PLUS;
+              }
 
-[A-Z]       {
-               return( token::UPPER );
-            }
+"-"           {
+                  return token::MINUS;
+              }
 
-[a-zA-Z]+   {
-               /**
-                * Section 10.1.5.1 of the 3.0.2 Bison Manual says the 
-                * following should work:
-                * yylval.build( yytext );
-                * but it doesn't.
-                * ref: http://goo.gl/KLn0w2
-                */
-               yylval->build< std::string >( yytext );
-               return( token::WORD );
-            }
+"*"           {
+                  return token::MUL;
+              }
 
-\n          {
-               // Update line number
-               loc->lines();
-               return( token::NEWLINE );
-            }
+"/"           {
+                  return token::DIV;
+              }
 
-.           {
-               return( token::CHAR );
-            }
+"%"           {
+                  return token::MOD;
+              }
+
+">"           {
+                  return token::GREATER;
+              }
+
+"<"           {
+                  return token::LESS;
+              }
+
+"="           {
+                  return token::EQL;
+              }
+
+"def"         {
+                  return token::DEF;
+              }
+
+0|[1-9][0-9]* {
+                  yylval->int_val = atoi(yytext);
+                  return(token::NUMBER);
+              }
+
+[a-zA-Z]+     {
+                  /**
+                  * Section 10.1.5.1 of the 3.0.2 Bison Manual says the 
+                  * following should work:
+                  * yylval.build( yytext );
+                  * but it doesn't.
+                  * ref: http://goo.gl/KLn0w2
+                  */
+                  // yylval->build<std::string>(yytext);
+                  yylval->str_val = new std::string(yytext);
+                  return(token::WORD);
+              }
+
+\n            {
+                  // Update line number
+                  return(token::NEWLINE);
+              }
+
+[ \t]         {
+                  /* Discard spaces, tabs, and new lines */
+              }
+
+[;].*[\n]     {
+
+              }
+
 %%
