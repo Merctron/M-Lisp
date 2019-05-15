@@ -44,6 +44,7 @@ namespace Mlisp {
 
 #include <string>
 #include <unordered_map>
+#include <vector>
 
 /* NODE_TYPE enum */
 enum NODE_TYPE {
@@ -54,28 +55,65 @@ enum NODE_TYPE {
     DEF_NODE,
     WORD_NODE,
     BOOL_NODE,
+    CALL_NODE,
     NUMBER_NODE
+};
+
+/* ARG_LIST struct */
+struct ARG_LIST {
+    std::vector<std::string *> arguments;
+};
+
+/* EXPR_LIST struct */
+struct EXPR_LIST {
+    std::vector<struct TREE_NODE *> expressions;
+};
+
+/* LAMBDA struct */
+struct LAMBDA {
+    struct ARG_LIST     *args;
+    struct TREE_NODE    *expr;
+};
+
+/* DEF struct */
+struct DEF {
+    std::string         *name;
+    struct TREE_NODE    *expr;
+};
+
+struct NON_ATOM {
+    std::string *strValue;
+    union {
+        struct TREE_NODE *expr;
+        struct EXPR_LIST *exprList;
+        struct ARG_LIST  *argList;
+    };
 };
 
 /* AST struct */
 struct TREE_NODE {
     enum NODE_TYPE type;
     union {
-        int               intValue;
-        std::string      *strValue;
-        bool              boolValue;
-        struct TREE_NODE *args[10];
+        int              intValue;
+        std::string     *strValue;
+        struct NON_ATOM *nonAtom; 
     };
 };
 
 /* ENV struct */
 struct ENV {
-    std::unordered_map<std::string, TREE_NODE> envMap;
+    std::unordered_map<std::string, struct TREE_NODE *> definitions;
 };
 
 /* CLASS TYPES */
 typedef struct TREE_NODE TREE_NODE;
-typedef struct ENV ENV;
+typedef struct ARG_LIST  ARG_LIST;
+typedef struct EXPR_LIST EXPR_LIST;
+typedef struct LAMBDA    LAMBDA;
+typedef struct ENV       ENV;
+
+/* CLASS DATA */
+ENV k_GLOBAL_ENV;
 
 /* CLASS METHODS */
 TREE_NODE * eval(TREE_NODE *node, ENV *env);
@@ -103,11 +141,15 @@ TREE_NODE * eval(TREE_NODE *node, ENV *env);
 
 %type  <node_val>    item
 %type  <node_val>    expression
+%type  <exps_val>    expressions
+%type  <args_val>    arguments
 
 %union {
     int               int_val;
     std::string      *str_val;
     struct TREE_NODE *node_val;
+    struct EXPR_LIST *exps_val;
+    struct ARG_LIST  *args_val;
 }
 
 %locations
@@ -121,105 +163,131 @@ list
     {
         TREE_NODE * node = eval($1, nullptr);
 
-        switch (node->type) {
-            case NUMBER_NODE:
-                std::cout << node->intValue;
-                break;
-            case BOOL_NODE:
-                std::cout << node->boolValue;
-                break;
+        if (node) {
+            switch (node->type) {
+                case NUMBER_NODE:
+                    std::cout << node->intValue;
+                    break;
+            }
+
+            std::cout << std::endl;
         }
 
-        std::cout << std::endl;
     }
   | list expression
   ;
 
 expression
-  : OPENPAR PLUS expression expression CLOSEPAR
+  : OPENPAR DEF WORD expression CLOSEPAR
     {
-        TREE_NODE * node = new TREE_NODE();
-        node->type       = ADD_NODE;
-        node->args[0]    = $3;
-        node->args[1]    = $4; 
-        $$               = node;
+        TREE_NODE *node         = new TREE_NODE();
+        node->type              = DEF_NODE;
+        node->nonAtom           = new NON_ATOM();
+        node->nonAtom->strValue = $3;
+        node->nonAtom->expr     = $4;
+        $$                      = node;
+    }
+  | OPENPAR PLUS expression expression CLOSEPAR
+    {
+        TREE_NODE *node = new TREE_NODE();
+        node->type      = ADD_NODE;
+
+        node->nonAtom            = new NON_ATOM();
+        node->nonAtom->exprList = new EXPR_LIST();
+        node->nonAtom->exprList->expressions.push_back($3);
+        node->nonAtom->exprList->expressions.push_back($4);
+        $$ = node;
     }
   | OPENPAR MINUS expression expression CLOSEPAR
     {
         TREE_NODE * node = new TREE_NODE();
         node->type       = SUB_NODE;
-        node->args[0]    = $3;
-        node->args[1]    = $4; 
-        $$               = node;
+
+        node->nonAtom            = new NON_ATOM();
+        node->nonAtom->exprList = new EXPR_LIST();
+        node->nonAtom->exprList->expressions.push_back($3);
+        node->nonAtom->exprList->expressions.push_back($4);
+        $$ = node;
     }
   | OPENPAR MUL expression expression CLOSEPAR
     {
         TREE_NODE * node = new TREE_NODE();
         node->type       = MUL_NODE;
-        node->args[0]    = $3;
-        node->args[1]    = $4; 
-        $$               = node;
+
+        node->nonAtom            = new NON_ATOM();
+        node->nonAtom->exprList = new EXPR_LIST();
+        node->nonAtom->exprList->expressions.push_back($3);
+        node->nonAtom->exprList->expressions.push_back($4);
+        $$ = node;
     }
   | OPENPAR DIV expression expression CLOSEPAR
     {
         TREE_NODE * node = new TREE_NODE();
         node->type       = DIV_NODE;
-        node->args[0]    = $3;
-        node->args[1]    = $4; 
-        $$               = node;
-    }
-  | OPENPAR MOD expression expression CLOSEPAR
-    {
-        driver.add_expression();
-        TREE_NODE * nodeA = $3;
-        TREE_NODE * nodeB = $4;
-        std::cout << "MOD: " << nodeA->intValue % nodeB->intValue << std::endl;
 
-        nodeA->intValue = nodeA->intValue % nodeB->intValue;
-        $$ = nodeA;
+        node->nonAtom            = new NON_ATOM();
+        node->nonAtom->exprList = new EXPR_LIST();
+        node->nonAtom->exprList->expressions.push_back($3);
+        node->nonAtom->exprList->expressions.push_back($4);
+        $$ = node;
     }
-  | OPENPAR GREATER expression expression CLOSEPAR
+  | OPENPAR WORD expressions CLOSEPAR
     {
-        driver.add_expression();
-        TREE_NODE * nodeA = $3;
-        TREE_NODE * nodeB = $4;
-        std::cout << "GR8: " << (nodeA->intValue > nodeB->intValue) << std::endl;
 
-        nodeA->boolValue = nodeA->intValue > nodeB->intValue;
-        nodeA->type      = BOOL_NODE;
-        $$ = nodeA;
-    }
-  | OPENPAR LESS expression expression CLOSEPAR
-    {
-        driver.add_expression();
-        TREE_NODE * nodeA = $3;
-        TREE_NODE * nodeB = $4;
-        std::cout << "LES: " << (nodeA->intValue < nodeB->intValue) << std::endl;
-
-        nodeA->boolValue = nodeA->intValue < nodeB->intValue;
-        nodeA->type      = BOOL_NODE;
-        $$ = nodeA;
+        $$ = nullptr;
     }
   | item    { $$ = $1;       }
   | NEWLINE { driver.prompt(); }
   ;
 
 item
-  : WORD    {
-                driver.add_word(*$1);
-                TREE_NODE * node = new TREE_NODE();
-                node->intValue   = 1;
-                node->type       = NUMBER_NODE;
+  : WORD    
+    {
+        // driver.add_word(*$1);
+        TREE_NODE * node = new TREE_NODE();
+        node->strValue   = $1;
+        node->type       = WORD_NODE;
 
-                $$ = node;
-            }
-  | NUMBER  {
-                TREE_NODE * node = new TREE_NODE();
-                node->intValue   = $1;
-                node->type       = NUMBER_NODE;
+        $$ = node;
+    }
+  | NUMBER  
+    {
+        TREE_NODE * node = new TREE_NODE();
+        node->intValue   = $1;
+        node->type       = NUMBER_NODE;
 
-                $$ = node;
-            }
+        $$ = node;
+    }
+  ;
+
+expressions
+  : expression 
+    {
+        EXPR_LIST * exprList = new EXPR_LIST();
+        exprList->expressions.push_back($1);
+        $$ = exprList;
+    }
+  | expressions expression
+    {
+        EXPR_LIST * exprList = $1;
+        exprList->expressions.push_back($2);
+        $$ = exprList;
+    }
+  ;
+
+arguments
+  : WORD 
+    {
+        ARG_LIST * argList = new ARG_LIST();
+        argList->arguments.emplace_back(*$1);
+        $$ = argList;
+    }
+  | arguments WORD
+    {
+        ARG_LIST * argList = $1;
+        argList->arguments.emplace_back(*$2);
+        $$ = argList;
+    }
   ;
 
 %%
@@ -227,10 +295,22 @@ item
 TREE_NODE * eval(TREE_NODE *node, ENV *env)
 {
     switch (node->type) {
+        case CALL_NODE:
+        {
+            // // First evaluate all arguments to final state
+            // for (int i = 0; i < node->expressions->expressions->size(); i++) {
+            //     node->expressions->expressions[i] = eval(node->expressions->expressions[i]);
+            // }
+
+            // // Find lambda declaration in the environment
+            // LAMBDA * lambda = environment.lambdas.at(*(node->lambdaName));
+
+            // // Map lambda arguments to those passed in
+        }
         case ADD_NODE:
         {
-            TREE_NODE *argOne = eval(node->args[0], env);
-            TREE_NODE *argTwo = eval(node->args[1], env);
+            TREE_NODE *argOne = eval(node->nonAtom->exprList->expressions[0], env);
+            TREE_NODE *argTwo = eval(node->nonAtom->exprList->expressions[1], env);
             TREE_NODE *result = new TREE_NODE();
             result->type      = NUMBER_NODE;
             result->intValue  = argOne->intValue + argTwo->intValue;
@@ -238,8 +318,8 @@ TREE_NODE * eval(TREE_NODE *node, ENV *env)
         }
         case SUB_NODE:
         {
-            TREE_NODE *argOne = eval(node->args[0], env);
-            TREE_NODE *argTwo = eval(node->args[1], env);
+            TREE_NODE *argOne = eval(node->nonAtom->exprList->expressions[0], env);
+            TREE_NODE *argTwo = eval(node->nonAtom->exprList->expressions[1], env);
             TREE_NODE *result = new TREE_NODE();
             result->type      = NUMBER_NODE;
             result->intValue  = argOne->intValue - argTwo->intValue;
@@ -247,8 +327,8 @@ TREE_NODE * eval(TREE_NODE *node, ENV *env)
         }
         case MUL_NODE:
         {
-            TREE_NODE *argOne = eval(node->args[0], env);
-            TREE_NODE *argTwo = eval(node->args[1], env);
+            TREE_NODE *argOne = eval(node->nonAtom->exprList->expressions[0], env);
+            TREE_NODE *argTwo = eval(node->nonAtom->exprList->expressions[1], env);
             TREE_NODE *result = new TREE_NODE();
             result->type      = NUMBER_NODE;
             result->intValue  = argOne->intValue * argTwo->intValue;
@@ -256,16 +336,27 @@ TREE_NODE * eval(TREE_NODE *node, ENV *env)
         }
         case DIV_NODE:
         {
-            TREE_NODE *argOne = eval(node->args[0], env);
-            TREE_NODE *argTwo = eval(node->args[1], env);
+            TREE_NODE *argOne = eval(node->nonAtom->exprList->expressions[0], env);
+            TREE_NODE *argTwo = eval(node->nonAtom->exprList->expressions[1], env);
             TREE_NODE *result = new TREE_NODE();
             result->type      = NUMBER_NODE;
             result->intValue  = argOne->intValue / argTwo->intValue;
             return result;
         }
         case DEF_NODE:
-            return node;
+            if (env) {
+                env->definitions.insert({ *(node->nonAtom->strValue), 
+                                                node->nonAtom->expr });
+                return nullptr;
+            }
+            k_GLOBAL_ENV.definitions.insert({ *(node->nonAtom->strValue), 
+                                                node->nonAtom->expr });
+            return nullptr;
         case WORD_NODE:
+            if (env) {
+                return env->definitions.find(*(node->strValue))->second;
+            }
+            return k_GLOBAL_ENV.definitions.find(*(node->strValue))->second;
             return node;
         case BOOL_NODE:
             return node;
