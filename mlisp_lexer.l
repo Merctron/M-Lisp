@@ -56,24 +56,12 @@ using token = Mlisp::Mlisp_Parser::token;
                   return token::DIV;
               }
 
-"%"           {
-                  return token::MOD;
-              }
-
-">"           {
-                  return token::GREATER;
-              }
-
-"<"           {
-                  return token::LESS;
-              }
-
-"="           {
-                  return token::EQL;
-              }
-
 "def"         {
                   return token::DEF;
+              }
+
+"lambda"      {
+                  return token::LAMBDA;
               }
 
 0|[1-9][0-9]* {
