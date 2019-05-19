@@ -54,6 +54,7 @@ enum NODE_TYPE {
     DIV_NODE,
     DEF_NODE,
     WORD_NODE,
+    ATOM_NODE,
     CALL_NODE,
     LAMBDA_NODE,
     NUMBER_NODE
@@ -128,6 +129,7 @@ TREE_NODE * eval(TREE_NODE *node, ENV *env);
 %token               DIV
 %token               DEF
 %token               LAMBDA
+%token               ATOM
 %token <str_val>     WORD
 %token               NEWLINE
 %token <int_val>     NUMBER
@@ -184,6 +186,14 @@ expression
         node->nonAtom           = new NON_ATOM();
         node->nonAtom->argList  = $4;
         node->nonAtom->expr     = $6;
+        $$                      = node;
+    }
+  | OPENPAR ATOM expression CLOSEPAR
+    {
+        TREE_NODE *node         = new TREE_NODE();
+        node->type              = ATOM_NODE;
+        node->nonAtom           = new NON_ATOM();
+        node->nonAtom->expr     = $3;
         $$                      = node;
     }
   | OPENPAR WORD expressions CLOSEPAR
@@ -371,6 +381,7 @@ TREE_NODE * eval(TREE_NODE *node, ENV *env)
             return result;
         }
         case DEF_NODE:
+        {
             if (env) {
                 env->definitions.insert({ *(node->nonAtom->strValue), 
                                                 node->nonAtom->expr });
@@ -379,14 +390,31 @@ TREE_NODE * eval(TREE_NODE *node, ENV *env)
             k_GLOBAL_ENV.definitions.insert({ *(node->nonAtom->strValue), 
                                                 node->nonAtom->expr });
             return nullptr;
+        }
         case WORD_NODE:
+        {
             if (env) {
                 return env->definitions.find(*(node->strValue))->second;
             }
             return k_GLOBAL_ENV.definitions.find(*(node->strValue))->second;
-            return node;
+        }
         case NUMBER_NODE:
+        {
             return node;
+        }
+        case ATOM_NODE:
+        {
+            TREE_NODE *evalNode = eval(node->nonAtom->expr, env);
+            TREE_NODE *newNode  = new TREE_NODE();
+            newNode->type       = NUMBER_NODE;
+            newNode->intValue   = 0;
+            if (evalNode) {
+                if (evalNode->type == NUMBER_NODE) {
+                    newNode->intValue = 1;
+                }
+            }
+            return newNode;
+        }
     }
 
     return nullptr;

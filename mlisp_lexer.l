@@ -64,6 +64,10 @@ using token = Mlisp::Mlisp_Parser::token;
                   return token::LAMBDA;
               }
 
+"atom"        {
+                  return token::ATOM;
+}
+
 0|[1-9][0-9]* {
                   yylval->int_val = atoi(yytext);
                   return(token::NUMBER);
