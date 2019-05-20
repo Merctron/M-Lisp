@@ -56,7 +56,9 @@ enum NODE_TYPE {
     WORD_NODE,
     ATOM_NODE,
     CALL_NODE,
+    LIST_NODE,
     LAMBDA_NODE,
+    QUOTE_NODE,
     NUMBER_NODE
 };
 
@@ -92,9 +94,10 @@ struct NON_ATOM {
 struct TREE_NODE {
     enum NODE_TYPE type;
     union {
-        int              intValue;
-        std::string     *strValue;
-        struct NON_ATOM *nonAtom; 
+        int               intValue;
+        std::string      *strValue;
+        struct NON_ATOM  *nonAtom; 
+        struct EXPR_LIST *list;
     };
 };
 
@@ -113,6 +116,7 @@ typedef struct ENV       ENV;
 ENV k_GLOBAL_ENV;
 
 /* CLASS METHODS */
+void        printNode(TREE_NODE *node);
 TREE_NODE * eval(TREE_NODE *node, ENV *env);
 
 %}
@@ -129,6 +133,7 @@ TREE_NODE * eval(TREE_NODE *node, ENV *env);
 %token               DIV
 %token               DEF
 %token               LAMBDA
+%token               QUOTE
 %token               ATOM
 %token <str_val>     WORD
 %token               NEWLINE
@@ -159,10 +164,7 @@ list
         TREE_NODE * node = eval($1, nullptr);
 
         if (node) {
-            if (node->type == NUMBER_NODE) {
-                    std::cout << node->intValue;
-            }
-
+            printNode(node);
             std::cout << std::endl;
         }
     }
@@ -188,6 +190,14 @@ expression
         node->nonAtom->expr     = $6;
         $$                      = node;
     }
+  | OPENPAR QUOTE expression CLOSEPAR
+    {
+        TREE_NODE *node         = new TREE_NODE();
+        node->type              = QUOTE_NODE;
+        node->nonAtom           = new NON_ATOM();
+        node->nonAtom->expr     = $3;
+        $$                      = node;
+    }
   | OPENPAR ATOM expression CLOSEPAR
     {
         TREE_NODE *node         = new TREE_NODE();
@@ -203,6 +213,13 @@ expression
         node->nonAtom           = new NON_ATOM();
         node->nonAtom->strValue = $2;
         node->nonAtom->exprList = $3;
+        $$                      = node;
+    }
+  | OPENPAR expressions CLOSEPAR
+    {
+        TREE_NODE *node         = new TREE_NODE();
+        node->type              = LIST_NODE;
+        node->list              = $2;
         $$                      = node;
     }
   | OPENPAR PLUS expression expression CLOSEPAR
@@ -305,10 +322,128 @@ arguments
 
 %%
 
+void printNode(TREE_NODE *node)
+{
+    switch (node->type) {
+        case LAMBDA_NODE:
+        {
+            std::cout << "(lambda (";
+            for (size_t i = 0;
+                 i < node->nonAtom->argList->arguments.size(); i++) {
+                std::cout << node->nonAtom->argList->arguments[i];
+                if (i < node->nonAtom->argList->arguments.size() - 1) {
+                    std::cout << " ";
+                }
+            }
+            std::cout << ") ";
+            printNode(node->nonAtom->expr);
+            std::cout << ")";
+            break;
+        }
+        case LIST_NODE:
+        {
+            std::cout << "(";
+            for (size_t i = 0;
+                 i < node->list->expressions.size(); i++) {
+                printNode(node->list->expressions[i]);
+                if (i < node->list->expressions.size() - 1) {
+                    std::cout << " ";
+                }
+            }
+            std::cout << ")";
+            break;
+        }
+        case CALL_NODE:
+        {
+            std::cout << "(" << *(node->nonAtom->strValue) << " ";
+            for (size_t i = 0;
+                 i < node->nonAtom->exprList->expressions.size(); i++) {
+                printNode(node->nonAtom->exprList->expressions[i]);
+                if (i < node->nonAtom->exprList->expressions.size() - 1) {
+                    std::cout << " ";
+                }
+            }
+            std::cout << ")";
+            break;
+        }
+        case ADD_NODE:
+        {
+            std::cout << "(+ ";
+            printNode(node->nonAtom->exprList->expressions[0]);
+            std::cout << " ";
+            printNode(node->nonAtom->exprList->expressions[1]);
+            std::cout << ")";
+            break;
+        }
+        case SUB_NODE:
+        {
+            std::cout << "(- ";
+            printNode(node->nonAtom->exprList->expressions[0]);
+            std::cout << " ";
+            printNode(node->nonAtom->exprList->expressions[1]);
+            std::cout << ")";
+            break;
+        }
+        case MUL_NODE:
+        {
+            std::cout << "(* ";
+            printNode(node->nonAtom->exprList->expressions[0]);
+            std::cout << " ";
+            printNode(node->nonAtom->exprList->expressions[1]);
+            std::cout << ")";
+            break;
+        }
+        case DIV_NODE:
+        {
+            std::cout << "(/ ";
+            printNode(node->nonAtom->exprList->expressions[0]);
+            std::cout << " ";
+            printNode(node->nonAtom->exprList->expressions[1]);
+            std::cout << ")";
+            break;
+        }
+        case DEF_NODE:
+        {
+            std::cout << "(def " << *(node->nonAtom->strValue) << " ";
+            printNode(node->nonAtom->expr);
+            std::cout << ")";
+            break;
+        }
+        case WORD_NODE:
+        {
+            std::cout << *(node->strValue);
+            break;
+        }
+        case NUMBER_NODE:
+        {
+            std::cout << node->intValue;
+            break;
+        }
+        case ATOM_NODE:
+        {
+            std::cout << "(atom ";
+            printNode(node->nonAtom->expr);
+            std::cout << ")";
+            break;
+        }
+        case QUOTE_NODE:
+        {
+            std::cout << "(quote ";
+            printNode(node->nonAtom->expr);
+            std::cout << ")";
+            break;
+        }
+    }
+}
+
 TREE_NODE * eval(TREE_NODE *node, ENV *env)
 {
     switch (node->type) {
         case LAMBDA_NODE:
+        {
+            return nullptr;
+        }
+        case LIST_NODE:
         {
             return nullptr;
         }
@@ -414,6 +549,10 @@ TREE_NODE * eval(TREE_NODE *node, ENV *env)
                 }
             }
             return newNode;
+        }
+        case QUOTE_NODE:
+        {
+            return node->nonAtom->expr;
         }
     }
 
