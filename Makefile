@@ -1,7 +1,7 @@
 CC    ?= clang
 CXX   ?= clang++
 
-EXE = my_wc
+EXE = mlisp
 
 CDEBUG = -g -Wall
 
@@ -24,17 +24,16 @@ OBJS  = $(addsuffix .o, $(CPPOBJ))
 CLEANLIST =  $(addsuffix .o, $(OBJ)) $(OBJS) \
 				 mlisp_parser.tab.cc mlisp_parser.tab.hh \
 				 location.hh position.hh \
-			     stack.hh mlisp_parser.output parser.o \
+				 stack.hh mlisp_parser.output parser.o \
 				 lexer.o mlisp_lexer.yy.cc $(EXE)\
 
 .PHONY: all
 all: wc
 
 wc: $(FILES)
-	$(MAKE) $(SOBJ)
-	$(MAKE) $(OBJS)
+	make $(SOBJ)
+	make $(OBJS)
 	$(CXX) $(CXXFLAGS) -o $(EXE) $(OBJS) parser.o lexer.o $(LIBS)
-
 
 parser: mlisp_parser.yy
 	bison -d -v mlisp_parser.yy

@@ -8,7 +8,7 @@
 #include "mlisp_scanner.hpp"
 #include "mlisp_parser.tab.hh"
 
-namespace Mlisp{
+namespace Mlisp {
 
 class Mlisp_Driver{
 public:
@@ -28,22 +28,14 @@ public:
    void parse( std::istream &iss );
 
    void add_expression();
-   void add_upper();
-   void add_lower();
    void add_word( const std::string &word );
-   void add_newline();
-   void add_char();
+   void prompt();
 
    std::ostream& print(std::ostream &stream);
 private:
 
    void parse_helper( std::istream &stream );
 
-   std::size_t  chars      = 0;
-   std::size_t  words      = 0;
-   std::size_t  lines      = 0;
-   std::size_t  uppercase  = 0;
-   std::size_t  lowercase  = 0;
    Mlisp::Mlisp_Parser  *parser  = nullptr;
    Mlisp::Mlisp_Scanner *scanner = nullptr;
    
