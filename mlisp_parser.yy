@@ -163,7 +163,7 @@ list_option : END | list END;
 list
   : expression
     {
-        TREE_NODE * node = eval($1, nullptr);
+        TREE_NODE * node = eval($1, &k_GLOBAL_ENV);
 
         if (node) {
             printNode(node);
@@ -535,22 +535,17 @@ TREE_NODE * eval(TREE_NODE *node, ENV *env)
         }
         case DEF_NODE:
         {
-            if (env) {
-                env->definitions.insert({ *(node->nonAtom->strValue), 
-                                            node->nonAtom->expr });
-                return nullptr;
-            }
-            k_GLOBAL_ENV.definitions.insert({ *(node->nonAtom->strValue), 
-                                                node->nonAtom->expr });
+            env->definitions.insert({
+                *(node->nonAtom->strValue),
+                node->nonAtom->expr
+            });
             return nullptr;
         }
         case SET_NODE:
         {
-            if (env) {
-                if (env->definitions.count(*(node->nonAtom->strValue))) {
-                    env->definitions[*(node->nonAtom->strValue)] =
-                        node->nonAtom->expr;
-                }
+            if (env->definitions.count(*(node->nonAtom->strValue))) {
+                env->definitions[*(node->nonAtom->strValue)] =
+                    node->nonAtom->expr;
             }
             else {
                 if (k_GLOBAL_ENV.definitions.count(*(node->nonAtom->strValue))) {
