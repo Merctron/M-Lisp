@@ -53,6 +53,7 @@ enum NODE_TYPE {
     MUL_NODE,
     DIV_NODE,
     DEF_NODE,
+    SET_NODE,
     WORD_NODE,
     ATOM_NODE,
     CALL_NODE,
@@ -132,6 +133,7 @@ TREE_NODE * eval(TREE_NODE *node, ENV *env);
 %token               MUL
 %token               DIV
 %token               DEF
+%token               SET
 %token               LAMBDA
 %token               QUOTE
 %token               ATOM
@@ -176,6 +178,15 @@ expression
     {
         TREE_NODE *node         = new TREE_NODE();
         node->type              = DEF_NODE;
+        node->nonAtom           = new NON_ATOM();
+        node->nonAtom->strValue = $3;
+        node->nonAtom->expr     = $4;
+        $$                      = node;
+    }
+  | OPENPAR SET WORD expression CLOSEPAR
+    {
+        TREE_NODE *node         = new TREE_NODE();
+        node->type              = SET_NODE;
         node->nonAtom           = new NON_ATOM();
         node->nonAtom->strValue = $3;
         node->nonAtom->expr     = $4;
@@ -409,6 +420,13 @@ void printNode(TREE_NODE *node)
             std::cout << ")";
             break;
         }
+        case SET_NODE:
+        {
+            std::cout << "(set " << *(node->nonAtom->strValue) << " ";
+            printNode(node->nonAtom->expr);
+            std::cout << ")";
+            break;
+        }
         case WORD_NODE:
         {
             std::cout << *(node->strValue);
@@ -519,11 +537,27 @@ TREE_NODE * eval(TREE_NODE *node, ENV *env)
         {
             if (env) {
                 env->definitions.insert({ *(node->nonAtom->strValue), 
-                                                node->nonAtom->expr });
+                                            node->nonAtom->expr });
                 return nullptr;
             }
             k_GLOBAL_ENV.definitions.insert({ *(node->nonAtom->strValue), 
                                                 node->nonAtom->expr });
+            return nullptr;
+        }
+        case SET_NODE:
+        {
+            if (env) {
+                if (env->definitions.count(*(node->nonAtom->strValue))) {
+                    env->definitions[*(node->nonAtom->strValue)] =
+                        node->nonAtom->expr;
+                }
+            }
+            else {
+                if (k_GLOBAL_ENV.definitions.count(*(node->nonAtom->strValue))) {
+                    k_GLOBAL_ENV.definitions[*(node->nonAtom->strValue)] =
+                        node->nonAtom->expr;
+                }
+            }
             return nullptr;
         }
         case WORD_NODE:

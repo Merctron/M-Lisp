@@ -60,6 +60,10 @@ using token = Mlisp::Mlisp_Parser::token;
                   return token::DEF;
               }
 
+"set"         {
+                  return token::SET;
+}
+
 "lambda"      {
                   return token::LAMBDA;
               }
