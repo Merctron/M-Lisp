@@ -10,8 +10,10 @@
 
 namespace Mlisp {
 
-class Mlisp_Driver{
+class Mlisp_Driver {
+
 public:
+
    Mlisp_Driver() = default;
 
    virtual ~Mlisp_Driver();
@@ -20,18 +22,20 @@ public:
     * parse - parse from a file
     * @param filename - valid string with input file
     */
-   void parse( const char * const filename );
+   void parse(const char * const filename);
+
    /** 
     * parse - parse from a c++ input stream
     * @param is - std::istream&, valid input stream
     */
-   void parse( std::istream &iss );
+   void parse(std::istream &iss);
 
    void add_expression();
    void add_word( const std::string &word );
    void prompt();
 
    std::ostream& print(std::ostream &stream);
+
 private:
 
    void parse_helper( std::istream &stream );

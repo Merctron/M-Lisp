@@ -5,7 +5,7 @@ A simple Lisp interpreter written in C++ and inspired by [this essay](http://www
 ## Building
 
 ### Requirements
-* Linux:   Download and install Clang/LLVM (Or modify the makefile as appropraite if using a different compiler frontend), bison/flex.
+* Linux:   Download and install Clang/LLVM (Or modify the makefile as appropriate if using a different compiler frontend), bison/flex.
 * macOS:   Download and install bison/flex using homebrew and the Xcode command line tools.
 * Windows: Download and install Clang/LLVM, MingGW-64, make, bison/flex, and add to path.
 
