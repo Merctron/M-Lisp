@@ -21,6 +21,10 @@ void Mlisp::Mlisp_Driver::parse(std::istream &stream) {
     return;
 }
 
+void Mlisp::Mlisp_Driver::setSingleUse() {
+    d_isSingleUse = true;
+}
+
 
 void Mlisp::Mlisp_Driver::parse_helper( std::istream &stream ) {
     delete(scanner);
@@ -61,6 +65,7 @@ void Mlisp::Mlisp_Driver::add_word(const std::string &word) {
 }
 
 void Mlisp::Mlisp_Driver::prompt() {
+    if (d_isSingleUse) return;
     std::cout << " M-Lisp >";
     parse(std::cin);
 }
