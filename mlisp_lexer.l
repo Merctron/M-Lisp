@@ -40,6 +40,10 @@ using token = Mlisp::Mlisp_Parser::token;
                   return token::CLOSEPAR;
               }
 
+";"           {
+                  return token::SEP;
+              }
+
 0|[1-9][0-9]* {
                   yylval->int_val = atoi(yytext);
                   return(token::NUMBER);
@@ -58,16 +62,15 @@ using token = Mlisp::Mlisp_Parser::token;
                   return(token::STRING);
               }
 
-\n            {
-                  // Update line number
-                  return(token::NEWLINE);
+[ \n]         {
+                  /* Discard spaces, tabs, and new lines */
               }
 
 [ \t]         {
                   /* Discard spaces, tabs, and new lines */
               }
 
-[;].*[\n]     {
+[#].*[\n]     {
 
               }
 .             {

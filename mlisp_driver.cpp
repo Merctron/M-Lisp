@@ -2,6 +2,8 @@
 #include <fstream>
 #include <cassert>
 #include <iostream>
+#include <string>
+#include <sstream>
 
 #include "mlisp_driver.hpp"
 
@@ -26,26 +28,28 @@ void Mlisp::Mlisp_Driver::setSingleUse() {
 }
 
 
-void Mlisp::Mlisp_Driver::parse_helper( std::istream &stream ) {
-    delete(scanner);
-    try {
-        scanner = new Mlisp::Mlisp_Scanner(&stream);
-    }
-    catch (std::bad_alloc &ba) {
-        std::cerr << "Failed to allocate scanner: (" << ba.what()
-                  << "), exiting!!\n";
-        exit(EXIT_FAILURE);
+void Mlisp::Mlisp_Driver::parse_helper(std::istream &stream) {
+    if (scanner == nullptr) {
+        try {
+            scanner = new Mlisp::Mlisp_Scanner(&stream);
+        }
+        catch (std::bad_alloc &ba) {
+            std::cerr << "Failed to allocate scanner: (" << ba.what()
+                    << "), exiting!!\n";
+            exit(EXIT_FAILURE);
+        }
     }
 
-    delete(parser); 
-    try {
-        parser = new Mlisp::Mlisp_Parser((*scanner), 
-                                         (*this));
-    }
-    catch (std::bad_alloc &ba) {
-      std::cerr << "Failed to allocate parser: (" << ba.what()
-                << "), exiting!!\n";
-      exit(EXIT_FAILURE);
+    if (parser == nullptr) {
+        try {
+            parser = new Mlisp::Mlisp_Parser((*scanner), 
+                                             (*this));
+        }
+        catch (std::bad_alloc &ba) {
+        std::cerr << "Failed to allocate parser: (" << ba.what()
+                    << "), exiting!!\n";
+        exit(EXIT_FAILURE);
+        }
     }
 
     const int accept(0);
@@ -65,7 +69,11 @@ void Mlisp::Mlisp_Driver::add_word(const std::string &word) {
 }
 
 void Mlisp::Mlisp_Driver::prompt() {
-    if (d_isSingleUse) return;
-    std::cout << " M-Lisp >";
-    parse(std::cin);
+    while (true) {
+        std::cout << "M-Lisp>";
+        std::string input;
+        std::getline(std::cin, input);
+        std::istringstream inStream(input);
+        parse(inStream);
+    }
 }

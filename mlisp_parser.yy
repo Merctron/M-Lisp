@@ -201,7 +201,7 @@ TREE_NODE * processReserved(TREE_NODE *node, ENV *env);
 %token               OPENPAR
 %token               CLOSEPAR
 %token <str_val>     STRING
-%token               NEWLINE
+%token               SEP
 %token <int_val>     NUMBER
 
 %type  <node_val>    item
@@ -214,13 +214,15 @@ TREE_NODE * processReserved(TREE_NODE *node, ENV *env);
     struct TREE_NODE *node_val;
 }
 
+%start program
+
 %locations
 
 %%
 
-list_option : END | list END;
+program : END | lists END;
 
-list
+lists
   : expression
     {
         TREE_NODE * node = eval($1, &k_GLOBAL_ENV);
@@ -229,7 +231,15 @@ list
             std::cout << std::endl;
         }
     }
-  | list expression  ;
+  | lists expression
+    {
+        TREE_NODE * node = eval($2, &k_GLOBAL_ENV);
+        if (node) {
+            printNode(node);
+            std::cout << std::endl;
+        }
+    }
+  ;
 
 expression
   : OPENPAR expressions CLOSEPAR
@@ -238,9 +248,6 @@ expression
     }
   | item        {
         $$ = $1;
-    }
-  | NEWLINE     {
-        driver.prompt();
     }
   ;
 
