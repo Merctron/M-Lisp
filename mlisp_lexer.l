@@ -40,48 +40,12 @@ using token = Mlisp::Mlisp_Parser::token;
                   return token::CLOSEPAR;
               }
 
-"+"           {
-                  return token::PLUS;
-              }
-
-"-"           {
-                  return token::MINUS;
-              }
-
-"*"           {
-                  return token::MUL;
-              }
-
-"/"           {
-                  return token::DIV;
-              }
-
-"def"         {
-                  return token::DEF;
-              }
-
-"set"         {
-                  return token::SET;
-}
-
-"lambda"      {
-                  return token::LAMBDA;
-              }
-
-"quote"       {
-                  return token::QUOTE;
-              }
-
-"atom"        {
-                  return token::ATOM;
-              }
-
 0|[1-9][0-9]* {
                   yylval->int_val = atoi(yytext);
                   return(token::NUMBER);
               }
 
-[a-zA-Z]+     {
+[a-zA-Z\+\-\*\/]+     {
                   /**
                   * Section 10.1.5.1 of the 3.0.2 Bison Manual says the 
                   * following should work:
@@ -91,7 +55,7 @@ using token = Mlisp::Mlisp_Parser::token;
                   */
                   // yylval->build<std::string>(yytext);
                   yylval->str_val = new std::string(yytext);
-                  return(token::WORD);
+                  return(token::STRING);
               }
 
 \n            {
@@ -106,5 +70,9 @@ using token = Mlisp::Mlisp_Parser::token;
 [;].*[\n]     {
 
               }
+.             {
+                  printf("bad input character '%s' at line %d\n", yytext, yylineno);
+              }
+
 
 %%

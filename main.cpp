@@ -18,7 +18,7 @@ int main(int argc, char **argv) {
    Mlisp::Mlisp_Driver driver;
    if (argc > 1) {
       driver.setSingleUse();
-      membuf sbuf(argv[1], argv[1] + sizeof(argv[1]));
+      membuf sbuf(argv[1], argv[1] + sizeof(argv[1]) - 1);
       std::istream in(&sbuf);
       driver.parse(in);
       return(EXIT_SUCCESS);
